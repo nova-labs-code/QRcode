@@ -3,15 +3,79 @@
 <head>
 <meta charset="UTF-8">
 <title>QR Code Download vs Print</title>
+
 <style>
-body{font-family:Arial,sans-serif;background:#111;color:#fff;text-align:center;padding:20px;}
-input,textarea,button{width:100%;margin-top:10px;padding:10px;border-radius:8px;border:none;font-size:1rem;}
-button{background:#2563eb;color:#fff;cursor:pointer;transition:.2s;}
+body{
+  font-family:Arial,sans-serif;
+  background:#111;
+  color:#fff;
+  text-align:center;
+  padding:40px;
+}
+
+/* Center & widen UI */
+.no-print{
+  max-width:720px;
+  margin:0 auto;
+}
+
+/* Bigger title */
+h1{
+  font-size:2.4rem;
+  margin-bottom:25px;
+}
+
+/* Bigger inputs & buttons */
+input,
+textarea,
+button{
+  width:100%;
+  margin-top:16px;
+  padding:18px;
+  border-radius:14px;
+  border:none;
+  font-size:1.25rem;
+}
+
+/* Taller textarea */
+textarea{
+  min-height:120px;
+}
+
+/* Buttons */
+button{
+  background:#2563eb;
+  color:#fff;
+  cursor:pointer;
+  transition:.2s;
+  font-weight:600;
+}
+
 button:hover{background:#1e40af;}
-#download-btn{background:#10b981;}#download-btn:hover{background:#059669;}
-#print-btn{background:#f59e0b;}#print-btn:hover{background:#b45309;}
-canvas{display:block;margin:20px auto;max-width:100%;}
-.no-print{display:block;}
+
+#download-btn{
+  background:#10b981;
+}
+#download-btn:hover{
+  background:#059669;
+}
+
+#print-btn{
+  background:#f59e0b;
+}
+#print-btn:hover{
+  background:#b45309;
+}
+
+/* Bigger canvas preview (visual only) */
+canvas{
+  display:block;
+  margin:30px auto;
+  max-width:100%;
+  width:90%;
+}
+
+/* PRINT */
 @media print{
   body *{visibility:hidden;}
   #print-area,#print-area *{visibility:visible;}
@@ -25,21 +89,30 @@ canvas{display:block;margin:20px auto;max-width:100%;}
     left:0;
     top:0;
   }
-  canvas{width:100%;height:auto;page-break-inside:avoid;}
-  @page{size:A4;margin:20mm;}
+  canvas{
+    width:100%;
+    height:auto;
+    page-break-inside:avoid;
+  }
+  @page{
+    size:A4;
+    margin:20mm;
+  }
 }
 </style>
 </head>
+
 <body>
 
 <h1 class="no-print">QR Code Generator</h1>
+
 <div class="no-print">
-<textarea id="qrText" rows="3" placeholder="Enter text or URL"></textarea>
-<input type="text" id="qrLabel" placeholder="Label under QR (optional)">
-<input type="file" id="qrLogo" accept="image/*">
-<button id="generate">Generate QR</button>
-<button id="download-btn">Download QR Code</button>
-<button id="print-btn">Print QR Code</button>
+  <textarea id="qrText" placeholder="Enter text or URL"></textarea>
+  <input type="text" id="qrLabel" placeholder="Label under QR (optional)">
+  <input type="file" id="qrLogo" accept="image/*">
+  <button id="generate">Generate QR</button>
+  <button id="download-btn">Download QR Code</button>
+  <button id="print-btn">Print QR Code</button>
 </div>
 
 <!-- PRINT (A4) -->
@@ -60,106 +133,109 @@ let logoImage = null;
 
 // Logo loader
 document.getElementById('qrLogo').addEventListener('change', e=>{
-  const file=e.target.files[0];
-  if(!file){ logoImage=null; return; }
-  const img=new Image();
-  img.onload=()=>logoImage=img;
-  img.src=URL.createObjectURL(file);
+  const file = e.target.files[0];
+  if(!file){ logoImage = null; return; }
+  const img = new Image();
+  img.onload = () => logoImage = img;
+  img.src = URL.createObjectURL(file);
 });
 
 document.getElementById('generate').addEventListener('click', async ()=>{
-  const text=document.getElementById('qrText').value.trim();
-  const label=document.getElementById('qrLabel').value.trim();
+  const text = document.getElementById('qrText').value.trim();
+  const label = document.getElementById('qrLabel').value.trim();
   if(!text) return alert('Enter QR text');
 
-  const qrCanvas=document.createElement('canvas');
-  await QRCode.toCanvas(qrCanvas,text,{
+  const qrCanvas = document.createElement('canvas');
+  await QRCode.toCanvas(qrCanvas, text, {
     width:3000,
     margin:0,
     scale:12
   });
 
-  // DOWNLOAD → much bigger
+  // DOWNLOAD → huge
   drawCanvas(downloadCtx, qrCanvas, label, {
     cutLine:false,
     qrSize:3300,
     labelFont:110
   });
 
-  // PRINT → A4 friendly
+  // PRINT → A4
   drawCanvas(printCtx, qrCanvas, label, {
     cutLine:true,
     qrSize:1500,
     labelFont:72
   });
 
-  document.getElementById('download-btn').onclick=()=>{
-    const a=document.createElement('a');
-    a.href=downloadCanvas.toDataURL('image/png');
-    a.download='qr-code-HD.png';
+  document.getElementById('download-btn').onclick = ()=>{
+    const a = document.createElement('a');
+    a.href = downloadCanvas.toDataURL('image/png');
+    a.download = 'qr-code-HD.png';
     a.click();
   };
 });
 
 function drawCanvas(ctx, qrCanvas, label, opts){
-  const cw=ctx.canvas.width;
-  const ch=ctx.canvas.height;
-  ctx.fillStyle="#fff";
+  const cw = ctx.canvas.width;
+  const ch = ctx.canvas.height;
+
+  ctx.fillStyle = "#fff";
   ctx.fillRect(0,0,cw,ch);
 
-  const qrSize=opts.qrSize;
-  const border=40;
-  const offset=80;
-  const labelFont=opts.labelFont;
-  const labelGap=40;
+  const qrSize = opts.qrSize;
+  const border = 40;
+  const offset = 80;
+  const labelFont = opts.labelFont;
+  const labelGap = 40;
 
-  let blockH=qrSize+border*2+offset*2;
-  if(label) blockH+=labelFont+labelGap;
+  let blockH = qrSize + border*2 + offset*2;
+  if(label) blockH += labelFont + labelGap;
 
-  const startX=(cw-(qrSize+border*2+offset*2))/2;
-  const startY=(ch-blockH)/2;
+  const startX = (cw - (qrSize + border*2 + offset*2)) / 2;
+  const startY = (ch - blockH) / 2;
 
-  const bx=startX+offset;
-  const by=startY+offset;
-  const qx=bx+border;
-  const qy=by+border;
+  const bx = startX + offset;
+  const by = startY + offset;
+  const qx = bx + border;
+  const qy = by + border;
 
-  ctx.fillStyle="#ccc";
-  ctx.fillRect(bx,by,qrSize+border*2,qrSize+border*2);
-  ctx.drawImage(qrCanvas,qx,qy,qrSize,qrSize);
+  ctx.fillStyle = "#ccc";
+  ctx.fillRect(bx, by, qrSize + border*2, qrSize + border*2);
+  ctx.drawImage(qrCanvas, qx, qy, qrSize, qrSize);
 
   if(logoImage){
-    let lw=qrSize*0.2;
-    let lh=lw*(logoImage.height/logoImage.width);
-    const lx=qx+(qrSize-lw)/2;
-    const ly=qy+(qrSize-lh)/2;
-    ctx.fillStyle="#fff";
-    ctx.fillRect(lx,ly,lw,lh);
-    ctx.drawImage(logoImage,lx,ly,lw,lh);
+    let lw = qrSize * 0.2;
+    let lh = lw * (logoImage.height / logoImage.width);
+    const lx = qx + (qrSize - lw) / 2;
+    const ly = qy + (qrSize - lh) / 2;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(lx, ly, lw, lh);
+    ctx.drawImage(logoImage, lx, ly, lw, lh);
   }
 
   if(label){
-    ctx.fillStyle="#000";
-    ctx.font=labelFont+"px sans-serif";
-    ctx.textAlign="center";
-    ctx.textBaseline="top";
-    ctx.fillText(label,cw/2,qy+qrSize+border+labelGap);
+    ctx.fillStyle = "#000";
+    ctx.font = labelFont + "px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(label, cw/2, qy + qrSize + border + labelGap);
   }
 
   if(opts.cutLine){
     ctx.setLineDash([18,12]);
-    ctx.lineWidth=6;
-    ctx.strokeStyle="#000";
-    ctx.strokeRect(startX,startY,qrSize+border*2+offset*2,blockH+60);
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "#000";
+    ctx.strokeRect(startX, startY, qrSize + border*2 + offset*2, blockH + 60);
     ctx.setLineDash([]);
 
-    ctx.font="48px sans-serif";
-    ctx.textBaseline="bottom";
-    ctx.fillText("All rights reserved – Nova Labs",cw/2,ch-40);
+    ctx.font = "48px sans-serif";
+    ctx.textBaseline = "bottom";
+    ctx.textAlign = "center";
+    ctx.fillText("All rights reserved – Nova Labs", cw/2, ch - 40);
   }
 }
 
-document.getElementById('print-btn').onclick=()=>window.print();
+document.getElementById('print-btn').onclick = ()=>window.print();
 </script>
+
 </body>
 </html>
