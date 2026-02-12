@@ -2,9 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+
+<!-- Disable zooming -->
+<meta name="viewport"
+  content="width=device-width,
+  initial-scale=1.0,
+  maximum-scale=1.0,
+  user-scalable=no">
+
 <title>QR Code Download vs Print</title>
 
 <style>
+html, body{
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+
 body{
   font-family:Arial,sans-serif;
   background:#111;
@@ -25,7 +38,7 @@ h1{
   margin-bottom:25px;
 }
 
-/* Bigger inputs & buttons */
+/* Bigger inputs & buttons (prevents iOS zoom) */
 input,
 textarea,
 button{
@@ -34,7 +47,7 @@ button{
   padding:18px;
   border-radius:14px;
   border:none;
-  font-size:1.25rem;
+  font-size:1.25rem; /* ≥16px prevents input zoom */
 }
 
 /* Taller textarea */
@@ -53,19 +66,11 @@ button{
 
 button:hover{background:#1e40af;}
 
-#download-btn{
-  background:#10b981;
-}
-#download-btn:hover{
-  background:#059669;
-}
+#download-btn{background:#10b981;}
+#download-btn:hover{background:#059669;}
 
-#print-btn{
-  background:#f59e0b;
-}
-#print-btn:hover{
-  background:#b45309;
-}
+#print-btn{background:#f59e0b;}
+#print-btn:hover{background:#b45309;}
 
 /* Bigger canvas preview (visual only) */
 canvas{
@@ -131,12 +136,22 @@ const printCanvas = document.getElementById('printCanvas');
 const printCtx = printCanvas.getContext('2d');
 let logoImage = null;
 
+/* Block double-tap zoom */
+let lastTouchEnd = 0;
+document.addEventListener('touchend', e=>{
+  const now = Date.now();
+  if(now - lastTouchEnd <= 300){
+    e.preventDefault();
+  }
+  lastTouchEnd = now;
+},{ passive:false });
+
 // Logo loader
 document.getElementById('qrLogo').addEventListener('change', e=>{
   const file = e.target.files[0];
   if(!file){ logoImage = null; return; }
   const img = new Image();
-  img.onload = () => logoImage = img;
+  img.onload = ()=> logoImage = img;
   img.src = URL.createObjectURL(file);
 });
 
@@ -152,14 +167,12 @@ document.getElementById('generate').addEventListener('click', async ()=>{
     scale:12
   });
 
-  // DOWNLOAD → huge
   drawCanvas(downloadCtx, qrCanvas, label, {
     cutLine:false,
     qrSize:3300,
     labelFont:110
   });
 
-  // PRINT → A4
   drawCanvas(printCtx, qrCanvas, label, {
     cutLine:true,
     qrSize:1500,
@@ -224,7 +237,12 @@ function drawCanvas(ctx, qrCanvas, label, opts){
     ctx.setLineDash([18,12]);
     ctx.lineWidth = 6;
     ctx.strokeStyle = "#000";
-    ctx.strokeRect(startX, startY, qrSize + border*2 + offset*2, blockH + 60);
+    ctx.strokeRect(
+      startX,
+      startY,
+      qrSize + border*2 + offset*2,
+      blockH + 60
+    );
     ctx.setLineDash([]);
 
     ctx.font = "48px sans-serif";
